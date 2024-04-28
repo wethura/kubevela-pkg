@@ -99,7 +99,11 @@ func (in *remoteClusterClient) GetRESTMapper(cluster string) (meta.RESTMapper, e
 	if item == nil {
 		copied := rest.CopyConfig(in.config)
 		copied.Wrap(NewTransportWrapper(ForCluster(cluster)))
-		mapper, err := apiutil.NewDynamicRESTMapper(copied)
+		cli, err := rest.HTTPClientFor(copied)
+		if err != nil {
+			return nil, err
+		}
+		mapper, err := apiutil.NewDynamicRESTMapper(copied, cli)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +136,11 @@ func (in *remoteClusterClient) GetRESTClient(gvk schema.GroupVersionKind) (rest.
 	}
 	item := in.restClients.Get(gvk)
 	if item == nil {
-		restClient, err := apiutil.RESTClientForGVK(gvk, true, in.config, in.codecs)
+		cli, err := rest.HTTPClientFor(in.config)
+		if err != nil {
+			return nil, err
+		}
+		restClient, err := apiutil.RESTClientForGVK(gvk, true, in.config, in.codecs, cli)
 		if err != nil {
 			return nil, err
 		}

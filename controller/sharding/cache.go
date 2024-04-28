@@ -19,6 +19,7 @@ package sharding
 import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -32,12 +33,14 @@ func BuildCache(scheme *runtime.Scheme, shardingObjects ...client.Object) cache.
 func BuildCacheWithOptions(opts cache.Options, shardingObjects ...client.Object) cache.NewCacheFunc {
 	if EnableSharding {
 		ls := labels.SelectorFromSet(map[string]string{LabelKubeVelaScheduledShardID: ShardID})
-		if opts.SelectorsByObject == nil {
-			opts.SelectorsByObject = map[client.Object]cache.ObjectSelector{}
+		if opts.ByObject == nil {
+			opts.ByObject = map[client.Object]cache.ByObject{}
 		}
 		for _, obj := range shardingObjects {
-			opts.SelectorsByObject[obj] = cache.ObjectSelector{Label: ls}
+			opts.ByObject[obj] = cache.ByObject{Label: ls}
 		}
 	}
-	return cache.BuilderWithOptions(opts)
+	return func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
+		return cache.New(config, opts)
+	}
 }

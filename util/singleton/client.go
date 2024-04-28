@@ -39,7 +39,15 @@ var KubeConfig = NewSingleton[*rest.Config](func() *rest.Config {
 
 // RESTMapper .
 var RESTMapper = NewSingletonE[meta.RESTMapper](func() (meta.RESTMapper, error) {
-	return apiutil.NewDiscoveryRESTMapper(KubeConfig.Get())
+	getConfig, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	cli, err := rest.HTTPClientFor(getConfig)
+	if err != nil {
+		return nil, err
+	}
+	return apiutil.NewDynamicRESTMapper(KubeConfig.Get(), cli)
 })
 
 // KubeClient .
